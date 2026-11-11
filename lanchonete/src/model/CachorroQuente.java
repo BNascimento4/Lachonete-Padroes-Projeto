@@ -1,4 +1,6 @@
-/** Componente concreto (abstrato) do Decorator. Subclasses especializam preço e descrição (herança + polimorfismo). */
+package model;
+
+/** Componente base do Decorator. */
 public abstract class CachorroQuente implements Lanche {
     protected final String descricao;
     protected final double preco;

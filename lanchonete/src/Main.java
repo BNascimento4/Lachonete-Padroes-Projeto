@@ -1,42 +1,34 @@
+import java.util.List;
+import controller.LanchoneteController;
+import model.Cardapio;
+import model.Cozinha;
+import model.Pedido;
+import model.PedidoObserver;
+import model.TelaClienteObserver;
+import repository.RepositorioPedidos;
+import repository.RepositorioPedidosEmMemoria;
+import service.LanchoneteFacade;
+import view.ConsoleView;
+
+/** Composition Root: instancia e conecta as dependências da aplicação. */
 public class Main {
     public static void main(String[] args) {
-        // Composição das dependências (DI feita "na mão" no ponto de entrada)
-        LanchoneteFacade lanchonete = new LanchoneteFacade(
-                Cardapio.getInstance(),
-                new RepositorioPedidosEmMemoria(),
-                new Cozinha(), new TelaCliente());
+        RepositorioPedidos repositorio = new RepositorioPedidosEmMemoria();
+        List<PedidoObserver> observadores = List.of(new Cozinha(), new TelaClienteObserver());
+        LanchoneteFacade facade = new LanchoneteFacade(Cardapio.getInstance(), repositorio, observadores);
+        LanchoneteController controller = new LanchoneteController(facade);
 
+        carregarDadosMockados(facade);
+        new ConsoleView(controller).iniciar();
+    }
+
+    private static void carregarDadosMockados(LanchoneteFacade facade) {
         try {
-            System.out.println("== Fazendo pedidos ==");
-            Pedido p1 = lanchonete.fazerPedido("Ana", "duplo", "queijo", "bacon", "batata");
-            lanchonete.fazerPedido("Bruno", "tradicional", "queijo");
-            lanchonete.imprimirResumo(p1.getId());
-
-            System.out.println("\n== Avançando status (Observer) ==");
-            lanchonete.avancarPedido(1);
-            lanchonete.avancarPedido(1);
-            lanchonete.avancarPedido(1);
-
-            System.out.println("\n== Provando o Singleton ==");
-            System.out.println("Mesma instância? " + (Cardapio.getInstance() == Cardapio.getInstance()));
-
-            System.out.println("\n== Provando o Prototype ==");
-            Lanche a = Cardapio.getInstance().novoLanche("tradicional");
-            Lanche b = Cardapio.getInstance().novoLanche("tradicional");
-            System.out.println("Cópias independentes? " + (a != b));
-
-            System.out.println("\n== Tratamento de erros ==");
-            try { lanchonete.fazerPedido("Carla", "vegano"); }
-            catch (ModeloInexistenteException e) { System.out.println("Erro: " + e.getMessage()); }
-            try { lanchonete.fazerPedido("Carla", "duplo", "ketchup"); }
-            catch (AdicionalInvalidoException e) { System.out.println("Erro: " + e.getMessage()); }
-            try { lanchonete.avancarPedido(99); }
-            catch (PedidoNaoEncontradoException e) { System.out.println("Erro: " + e.getMessage()); }
-            try { lanchonete.avancarPedido(1); }
-            catch (StatusInvalidoException e) { System.out.println("Erro: " + e.getMessage()); }
-
+            Pedido ana = facade.fazerPedido("Ana", "duplo", List.of("queijo", "bacon", "batata"));
+            facade.fazerPedido("Bruno", "tradicional", List.of("queijo"));
+            System.out.println("Dados de demonstração carregados. Pedido inicial da Ana: #" + ana.getId());
         } catch (Exception e) {
-            System.out.println("Erro inesperado: " + e.getMessage());
+            System.out.println("Não foi possível carregar os dados de demonstração: " + e.getMessage());
         }
     }
 }
